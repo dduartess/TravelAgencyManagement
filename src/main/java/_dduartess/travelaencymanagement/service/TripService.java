@@ -109,4 +109,11 @@ public class TripService {
                 passengers
         );
     }
+
+    @Transactional(readOnly = true)
+    public Set<TripResponseDto> getAllTrips() {
+        return tripRepository.findAll().stream()
+                .map(this::toResponse)
+                .collect(java.util.stream.Collectors.toSet());
+    }
 }

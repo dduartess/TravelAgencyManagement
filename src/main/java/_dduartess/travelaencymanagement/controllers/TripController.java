@@ -6,6 +6,9 @@ import _dduartess.travelaencymanagement.dtos.trip.TripPassengerStatsDto;
 import _dduartess.travelaencymanagement.dtos.trip.TripResponseDto;
 import _dduartess.travelaencymanagement.service.TripService;
 import jakarta.validation.Valid;
+
+import java.util.Set;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +20,11 @@ public class TripController {
 
     public TripController(TripService tripService) {
         this.tripService = tripService;
+    }
+
+    @GetMapping
+    public ResponseEntity<Set<TripResponseDto>> getAllTrips() {
+        return ResponseEntity.ok(tripService.getAllTrips());
     }
 
     @PostMapping
