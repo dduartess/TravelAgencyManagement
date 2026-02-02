@@ -3,7 +3,7 @@ package _dduartess.travelaencymanagement.entities.trip;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,7 +65,7 @@ public class Trip {
 
     @ManyToMany
     @JoinTable(name = "trip_passengers", joinColumns = @JoinColumn(name = "trip_id"), inverseJoinColumns = @JoinColumn(name = "customer_id"))
-    private Set<Customer> passengers;
+    private Set<Customer> passengers = new HashSet<>();
 
     @AssertTrue(message = "A data de fim não pode ser menor que a data de início")
     public boolean isEndDateValid() {
@@ -73,9 +73,10 @@ public class Trip {
         return !endDate.isBefore(startDate);
     }
 
-    @AssertTrue(message = "É necessário informar pelo menos um valor de quarto maior que zero")
+    @AssertTrue(message = "É necessário informar pelo menos um valor de quarto e todos devem ser maiores que zero")
     public boolean isRoomPricesValid() {
         if (roomPrices == null || roomPrices.isEmpty()) return false;
-        return roomPrices.values().stream().anyMatch(price -> price != null && price.compareTo(BigDecimal.ZERO) > 0);
+        return roomPrices.values().stream()
+                .allMatch(price -> price != null && price.compareTo(BigDecimal.ZERO) > 0);
     }
 }
