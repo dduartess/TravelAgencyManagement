@@ -1,8 +1,10 @@
 package _dduartess.travelaencymanagement.service;
 
 import _dduartess.travelaencymanagement.dtos.customer.CustomerDto;
+import _dduartess.travelaencymanagement.dtos.customer.CustomerResponseDto;
 import _dduartess.travelaencymanagement.dtos.trip.TripCreateDto;
 import _dduartess.travelaencymanagement.dtos.trip.TripPassengerStatsDto;
+import _dduartess.travelaencymanagement.dtos.trip.TripResponseDto;
 import _dduartess.travelaencymanagement.entities.customers.Customer;
 import _dduartess.travelaencymanagement.entities.trip.Trip;
 import _dduartess.travelaencymanagement.repositories.CustomerRepository;
@@ -27,7 +29,7 @@ public class TripService {
     }
 
     @Transactional
-    public Trip createTrip(TripCreateDto dto) {
+    public TripResponseDto createTrip(TripCreateDto dto) {
         if (dto.startDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("A data de início não pode ser anterior à data atual.");
         }
@@ -41,11 +43,12 @@ public class TripService {
         trip.setEndDate(dto.endDate());
         trip.setRoomPrices(new HashMap<>(dto.roomPrices()));
 
-        return tripRepository.save(trip);
+        Trip saved = tripRepository.save(trip);
+        return toResponse(saved);
     }
 
     @Transactional
-    public Trip addPassenger(Long tripId, CustomerDto customerDto) {
+    public TripResponseDto addPassenger(Long tripId, CustomerDto customerDto) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new IllegalArgumentException("Viagem não encontrada com ID: " + tripId));
 
@@ -64,7 +67,9 @@ public class TripService {
         }
 
         trip.getPassengers().add(customer);
-        return tripRepository.save(trip);
+        Trip saved = tripRepository.save(trip);
+
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -82,5 +87,26 @@ public class TripService {
                 .collect(Collectors.toSet());
 
         return new TripPassengerStatsDto(passengerDtos, passengerDtos.size());
+    }
+
+    private TripResponseDto toResponse(Trip trip) {
+        Set<CustomerResponseDto> passengers = trip.getPassengers().stream()
+                .map(c -> new CustomerResponseDto(
+                        c.getId(),
+                        c.getName(),
+                        c.getDocumentNumber(),
+                        c.getBirthDate(),
+                        c.getPhoneNumber()
+                ))
+                .collect(Collectors.toSet());
+
+        return new TripResponseDto(
+                trip.getId(),
+                trip.getDestination(),
+                trip.getStartDate(),
+                trip.getEndDate(),
+                trip.getRoomPrices(),
+                passengers
+        );
     }
 }

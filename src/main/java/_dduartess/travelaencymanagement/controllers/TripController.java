@@ -3,7 +3,7 @@ package _dduartess.travelaencymanagement.controllers;
 import _dduartess.travelaencymanagement.dtos.customer.CustomerDto;
 import _dduartess.travelaencymanagement.dtos.trip.TripCreateDto;
 import _dduartess.travelaencymanagement.dtos.trip.TripPassengerStatsDto;
-import _dduartess.travelaencymanagement.entities.trip.Trip;
+import _dduartess.travelaencymanagement.dtos.trip.TripResponseDto;
 import _dduartess.travelaencymanagement.service.TripService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -20,14 +20,14 @@ public class TripController {
     }
 
     @PostMapping
-    public ResponseEntity<Trip> createTrip(@RequestBody @Valid TripCreateDto dto) {
-        Trip created = tripService.createTrip(dto);
+    public ResponseEntity<TripResponseDto> createTrip(@RequestBody @Valid TripCreateDto dto) {
+        TripResponseDto created = tripService.createTrip(dto);
         return ResponseEntity.ok(created);
     }
 
     @PostMapping("/{tripId}/passengers")
-    public ResponseEntity<Trip> addPassenger(@PathVariable Long tripId, @RequestBody @Valid CustomerDto dto) {
-        Trip updated = tripService.addPassenger(tripId, dto);
+    public ResponseEntity<TripResponseDto> addPassenger(@PathVariable Long tripId, @RequestBody @Valid CustomerDto dto) {
+        TripResponseDto updated = tripService.addPassenger(tripId, dto);
         return ResponseEntity.ok(updated);
     }
 
