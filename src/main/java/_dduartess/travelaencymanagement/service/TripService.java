@@ -9,7 +9,6 @@ import _dduartess.travelaencymanagement.entities.customers.Customer;
 import _dduartess.travelaencymanagement.entities.trip.Trip;
 import _dduartess.travelaencymanagement.repositories.CustomerRepository;
 import _dduartess.travelaencymanagement.repositories.TripRepository;
-import jakarta.validation.Valid;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -137,5 +136,9 @@ public class TripService {
 
         Trip updated = tripRepository.save(trip);
         return toResponse(updated);
+    }
+
+    public void deleteTrip(Long tripId) {
+        tripRepository.deleteById(tripId);
     }
 }

@@ -12,6 +12,7 @@ import java.util.Set;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/trips")
 public class TripController {
@@ -51,5 +52,10 @@ public class TripController {
         return ResponseEntity.ok(updated);
     }
 
+    @DeleteMapping("/{tripId}")
+    public ResponseEntity<Void> deleteTrip(@PathVariable Long tripId) {
+        tripService.deleteTrip(tripId);
+        return ResponseEntity.noContent().build();
+    }
 
 }
