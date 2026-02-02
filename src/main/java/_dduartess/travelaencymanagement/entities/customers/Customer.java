@@ -2,6 +2,7 @@ package _dduartess.travelaencymanagement.entities.customers;
 
 import java.time.LocalDate;
 
+import _dduartess.travelaencymanagement.dtos.customer.CustomerDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -50,4 +51,12 @@ public class Customer {
     @Pattern(regexp = "\\d{11}", message = "O telefone deve conter exatamente 11 dígitos")
     @Column(name = "phone_number", nullable = false, length = 11)
     private String phoneNumber;
+
+    public Customer updateFromDto(CustomerDto dto) {
+    this.setName(dto.name());
+    this.setDocumentNumber(dto.documentNumber());
+    this.setBirthDate(dto.birthDate());
+    this.setPhoneNumber(dto.phoneNumber());
+    return this;
+}
 }

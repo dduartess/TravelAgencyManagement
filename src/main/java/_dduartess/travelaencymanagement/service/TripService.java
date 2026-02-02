@@ -9,6 +9,7 @@ import _dduartess.travelaencymanagement.entities.customers.Customer;
 import _dduartess.travelaencymanagement.entities.trip.Trip;
 import _dduartess.travelaencymanagement.repositories.CustomerRepository;
 import _dduartess.travelaencymanagement.repositories.TripRepository;
+import jakarta.validation.Valid;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -141,4 +142,38 @@ public class TripService {
     public void deleteTrip(Long tripId) {
         tripRepository.deleteById(tripId);
     }
+
+    public void removePassenger(Long tripId, Long customerId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new IllegalArgumentException("Viagem não encontrada com ID: " + tripId));
+
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado com ID: " + customerId));
+
+        if (!trip.getPassengers().contains(customer)) {
+            throw new IllegalArgumentException("Este passageiro não está cadastrado nesta viagem.");
+        }
+
+        trip.getPassengers().remove(customer);
+        tripRepository.save(trip);
+    }
+
+    public TripResponseDto updatePassenger(Long tripId, Long customerId, CustomerDto dto) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new IllegalArgumentException("Viagem não encontrada com ID: " + tripId));
+
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado com ID: " + customerId));
+
+        if (!trip.getPassengers().contains(customer)) {
+            throw new IllegalArgumentException("Este passageiro não está cadastrado nesta viagem.");
+        }
+
+        customer.updateFromDto(dto);
+
+        customerRepository.save(customer);
+
+        return toResponse(trip);
+    }
+
 }

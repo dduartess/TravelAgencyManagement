@@ -58,4 +58,15 @@ public class TripController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{tripId}/passengers/{customerId}")
+    public ResponseEntity<Void> removePassenger(@PathVariable Long tripId, @PathVariable Long customerId) {
+        tripService.removePassenger(tripId, customerId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{tripId}/passengers/{customerId}")
+    public ResponseEntity<TripResponseDto> updatePassenger(@PathVariable Long tripId, @PathVariable Long customerId, @RequestBody @Valid CustomerDto dto) {
+        TripResponseDto updated = tripService.updatePassenger(tripId, customerId, dto);
+        return ResponseEntity.ok(updated);
+    }
 }
