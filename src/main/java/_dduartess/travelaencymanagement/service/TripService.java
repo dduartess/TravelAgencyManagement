@@ -9,6 +9,8 @@ import _dduartess.travelaencymanagement.entities.customers.Customer;
 import _dduartess.travelaencymanagement.entities.trip.Trip;
 import _dduartess.travelaencymanagement.repositories.CustomerRepository;
 import _dduartess.travelaencymanagement.repositories.TripRepository;
+import jakarta.validation.Valid;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -115,5 +117,25 @@ public class TripService {
         return tripRepository.findAll().stream()
                 .map(this::toResponse)
                 .collect(java.util.stream.Collectors.toSet());
+    }
+
+    public TripResponseDto updateTrip(Long tripId, TripCreateDto dto) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new IllegalArgumentException("Viagem não encontrada com ID: " + tripId));
+
+        if (dto.startDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("A data de início não pode ser anterior à data atual.");
+        }
+        if (dto.endDate().isBefore(dto.startDate())) {
+            throw new IllegalArgumentException("A data de fim não pode ser menor que a data de início.");
+        }
+
+        trip.setDestination(dto.destination());
+        trip.setStartDate(dto.startDate());
+        trip.setEndDate(dto.endDate());
+        trip.setRoomPrices(new HashMap<>(dto.roomPrices()));
+
+        Trip updated = tripRepository.save(trip);
+        return toResponse(updated);
     }
 }

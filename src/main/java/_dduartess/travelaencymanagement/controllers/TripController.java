@@ -44,4 +44,12 @@ public class TripController {
         TripPassengerStatsDto stats = tripService.getTripPassengers(tripId);
         return ResponseEntity.ok(stats);
     }
+
+    @PutMapping("/{tripId}")
+    public ResponseEntity<TripResponseDto> updateTrip(@PathVariable Long tripId, @RequestBody @Valid TripCreateDto dto) {
+        TripResponseDto updated = tripService.updateTrip(tripId, dto);
+        return ResponseEntity.ok(updated);
+    }
+
+
 }
