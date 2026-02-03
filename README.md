@@ -1,8 +1,11 @@
 # ✈️ Travel Agency Management --- MVP
 
 Sistema de gestão para agência de viagens desenvolvido com **Spring
-Boot + JPA + PostgreSQL**, focado no aprendizado prático de **engenharia
-de software**, modelagem de domínio e boas práticas de arquitetura.
+Boot + JPA (Hibernate) + PostgreSQL**, com **Spring Security + JWT** e
+integração real com **frontend React**.
+
+Foco em **modelagem de domínio**, **boas práticas de arquitetura**,
+**segurança** e **integração full-stack**.
 
 ------------------------------------------------------------------------
 
@@ -14,28 +17,35 @@ O sistema permite:
 -   Criação de viagens
 -   Definição de preços por tipo de quarto
 -   Associação de passageiros às viagens
--   Consulta de passageiros por viagem
-
-Arquitetura separada em **Entity**, **DTO**, **Service** e
-**Controller**.
+-   Edição e remoção de passageiros da viagem
+-   Consulta de passageiros por viagem (com estatísticas)
+-   Autenticação segura com JWT
+-   Arquitetura organizada em **Entity → DTO → Service → Controller →
+    Security**
 
 ------------------------------------------------------------------------
 
-## 🧱 Entidades do domínio
+## 🧱 Entidades do Domínio
 
 ### 👤 Customer (Passageiro)
 
 **Tabela:** `tb_customers`
 
+  ------------------------------------------------------------------------
   Campo            Tipo        Regra
-  ---------------- ----------- -------------------------------------
+  ---------------- ----------- -------------------------------------------
   id               Long        PK, auto gerado
-  name             String      Obrigatório, apenas letras
-  documentNumber   String      Obrigatório, apenas números (7--20)
-  birthDate        LocalDate   Obrigatório, passado ou presente
-  phoneNumber      String      Obrigatório, 11 dígitos
 
-Relacionamento: ManyToMany com Trip.
+  name             String      Obrigatório, apenas letras
+
+  documentNumber   String      Obrigatório, apenas números (7--20)
+
+  birthDate        LocalDate   Obrigatório, passado ou presente
+
+  phoneNumber      String      Obrigatório, 11 dígitos
+  ------------------------------------------------------------------------
+
+Relacionamento: `ManyToMany` com Trip.
 
 ------------------------------------------------------------------------
 
@@ -54,18 +64,15 @@ Relacionamento: ManyToMany com Trip.
 
 ### 🛏️ Preços por tipo de quarto
 
-Mapeamento:
-
 ``` java
-Map<RoomType, BigDecimal> roomPrices
+Map<RoomType, BigDecimal> roomPrices;
 ```
 
 **Tabela:** `trip_room_prices`
 
-  trip_id   room_type   price
-  --------- ----------- -------
+| trip_id \| room_type \| price \|
 
-Enum RoomType: - CASAL - TRIPLO - QUADRUPLO
+Enum `RoomType`: CASAL, TRIPLO, QUADRUPLO
 
 ------------------------------------------------------------------------
 
@@ -73,8 +80,7 @@ Enum RoomType: - CASAL - TRIPLO - QUADRUPLO
 
 **Tabela:** `trip_passengers`
 
-  trip_id   customer_id
-  --------- -------------
+| trip_id \| customer_id \|
 
 Implementado com `Set<Customer>` para evitar duplicidade.
 
@@ -84,108 +90,87 @@ Implementado com `Set<Customer>` para evitar duplicidade.
 
 ### Entrada
 
--   TripCreateDto
--   CustomerDto
+-   `TripCreateDto`
+-   `CustomerDto`
 
 ### Saída
 
--   TripResponseDto
--   CustomerResponseDto
--   TripPassengerStatsDto
-
-Motivo: não expor Entities na API.
+-   `TripResponseDto`
+-   `CustomerResponseDto`
+-   `TripPassengerStatsDto`
 
 ------------------------------------------------------------------------
 
-## ⚙️ Regras de negócio
+## ⚙️ Regras de Negócio
 
-### Criar viagem
+-   Datas da viagem validadas
+-   Preços obrigatórios por quarto
+-   Passageiros não duplicam na viagem
+-   Passageiros podem ser editados e removidos da viagem
 
--   Data início não pode ser no passado
--   Data fim ≥ data início
--   Deve existir ao menos um preço de quarto \> 0
+------------------------------------------------------------------------
 
-### Adicionar passageiro
+## 🔐 Segurança --- Spring Security + JWT
 
--   Se não existir → cria
--   Se existir → reutiliza
--   Não permite duplicidade na mesma viagem
+O sistema utiliza autenticação **stateless** com JWT.
 
-### Consultar passageiros
+Fluxo:
 
--   Retorna lista e total
+1.  Login com username e senha
+2.  Backend gera token JWT
+3.  Frontend envia token no header Authorization
+4.  Filtro JWT autentica as requisições protegidas
+
+Endpoint de login:
+
+**POST `/auth/login`**
+
+``` json
+{
+  "username": "admin",
+  "password": "123456"
+}
+```
+
+Resposta:
+
+``` json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
 
 ------------------------------------------------------------------------
 
 ## 🌐 Endpoints
 
-### POST /trips
+-   POST `/trips`
+-   POST `/trips/{tripId}/passengers`
+-   GET `/trips/{tripId}/passengers`
+-   PUT `/trips/{tripId}/passengers/{customerId}`
+-   DELETE `/trips/{tripId}/passengers/{customerId}`
 
-Cria uma viagem
-
-``` json
-{
-  "destination": "Porto Seguro",
-  "startDate": "2026-03-04",
-  "endDate": "2026-03-08",
-  "roomPrices": {
-    "CASAL": 850.00,
-    "QUADRUPLO": 750.00
-  }
-}
-```
+Todos protegidos por JWT.
 
 ------------------------------------------------------------------------
 
-### POST /trips/{tripId}/passengers
-
-Adiciona passageiro
-
-``` json
-{
-  "name": "Daniel Duarte",
-  "documentNumber": "12345678901",
-  "birthDate": "2005-01-10",
-  "phoneNumber": "38991555907"
-}
-```
-
-------------------------------------------------------------------------
-
-### GET /trips/{tripId}/passengers
-
-Lista passageiros e quantidade.
-
-------------------------------------------------------------------------
-
-## 🗄️ Banco de dados
+## 🗄️ Banco de Dados
 
 PostgreSQL via Docker.
 
-Tabelas criadas automaticamente pelo Hibernate: - tb_customers -
-tb_trips - trip_passengers - trip_room_prices
+Tabelas:
+
+-   tb_customers
+-   tb_trips
+-   trip_passengers
+-   trip_room_prices
 
 ------------------------------------------------------------------------
 
-## 🧠 Decisões técnicas aplicadas
+## ✅ Estado Atual do MVP
 
--   Uso de Set para evitar duplicidade
--   Map\<Enum, BigDecimal\> para preços por quarto
--   Bean Validation nas entidades
--   DTO de resposta
--   Service com regras de negócio
--   ManyToMany correto
--   Enum persistido como STRING
-
-------------------------------------------------------------------------
-
-## ✅ Estado atual do MVP
-
-O sistema já permite:
-
--   Criar viagens
--   Definir preços por quarto
--   Cadastrar passageiros automaticamente
--   Vincular passageiros às viagens
--   Consultar passageiros
+-   CRUD completo de viagens
+-   Gestão completa de passageiros por viagem
 -   Persistência relacional correta
+-   Autenticação JWT funcional
+-   Integração completa com frontend React
