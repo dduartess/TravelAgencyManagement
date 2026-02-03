@@ -4,7 +4,9 @@ package _dduartess.travelaencymanagement.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,13 +33,22 @@ public class AuthenticationController {
     @Autowired
     private TokenService tokenService;
 
+
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Validated AuthenticationDTO data){
+    public ResponseEntity<?> login(@RequestBody @Validated AuthenticationDTO data){
+    try {
         var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.password());
         var auth = this.authenticationManager.authenticate(usernamePassword);
+
         var token = tokenService.generateToken((User) auth.getPrincipal());
         return ResponseEntity.ok(new LoginResponseDTO(token));
+
+    } catch (BadCredentialsException e) {
+        return ResponseEntity.status(401).body("Login ou senha inválidos");
+    } catch (AuthenticationException e) {
+        return ResponseEntity.status(401).body("Falha na autenticação");
     }
+}
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@RequestBody @Validated RegisterDTO data){
