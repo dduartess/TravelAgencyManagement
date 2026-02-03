@@ -1,10 +1,9 @@
 package _dduartess.travelaencymanagement.dtos.trip;
 
 import java.util.Set;
-
-import _dduartess.travelaencymanagement.dtos.customer.CustomerDto;
+import _dduartess.travelaencymanagement.dtos.customer.CustomerResponseDto;
 
 public record TripPassengerStatsDto(
-    Set<CustomerDto> passengers,
-    int total
+        Set<CustomerResponseDto> passengers,
+        int total
 ) {}

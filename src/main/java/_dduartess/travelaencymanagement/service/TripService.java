@@ -9,8 +9,6 @@ import _dduartess.travelaencymanagement.entities.customers.Customer;
 import _dduartess.travelaencymanagement.entities.trip.Trip;
 import _dduartess.travelaencymanagement.repositories.CustomerRepository;
 import _dduartess.travelaencymanagement.repositories.TripRepository;
-import jakarta.validation.Valid;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,23 +72,22 @@ public class TripService {
         return toResponse(saved);
     }
 
-    @Transactional(readOnly = true)
     public TripPassengerStatsDto getTripPassengers(Long tripId) {
         Trip trip = tripRepository.findById(tripId)
-                .orElseThrow(() -> new IllegalArgumentException("Viagem não encontrada com ID: " + tripId));
+            .orElseThrow(() -> new IllegalArgumentException("Viagem não encontrada com ID: " + tripId));
 
-        Set<CustomerDto> passengerDtos = trip.getPassengers().stream()
-                .map(c -> new CustomerDto(
-                        c.getName(),
-                        c.getDocumentNumber(),
-                        c.getBirthDate(),
-                        c.getPhoneNumber()
-                ))
-                .collect(Collectors.toSet());
+    Set<CustomerResponseDto> passengers = trip.getPassengers().stream()
+            .map(c -> new CustomerResponseDto(
+                    c.getId(),
+                    c.getName(),
+                    c.getDocumentNumber(),
+                    c.getBirthDate(),
+                    c.getPhoneNumber()
+            ))
+            .collect(Collectors.toSet());
 
-        return new TripPassengerStatsDto(passengerDtos, passengerDtos.size());
-    }
-
+    return new TripPassengerStatsDto(passengers, passengers.size());
+}
     private TripResponseDto toResponse(Trip trip) {
         Set<CustomerResponseDto> passengers = trip.getPassengers().stream()
                 .map(c -> new CustomerResponseDto(
