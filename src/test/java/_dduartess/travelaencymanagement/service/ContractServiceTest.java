@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import _dduartess.travelaencymanagement.dtos.contract.ContractResponseDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -209,6 +210,107 @@ class ContractServiceTest {
                 RoomType.CASAL,
                 null
         );
+    }
+
+    @Test
+    void addPassenger_shouldFail_whenCustomerAlreadyInAnotherContractOfSameTrip() {
+        Trip trip = new Trip();
+        trip.setId(1L);
+        trip.setRoomPrices(Map.of(RoomType.CASAL, new BigDecimal("850.00")));
+
+        Contract contract = new Contract();
+        contract.setId(10L);
+        contract.setTrip(trip);
+
+        var dto = new ContractPassengerCreateDto(
+                new CustomerDto("João", "111", LocalDate.of(2000, 1, 1), "38999999999"),
+                ChargeType.PAYING,
+                RoomType.CASAL,
+                null
+        );
+
+        when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+
+        when(customerRepository.findByDocumentNumber("111")).thenReturn(Optional.empty());
+        when(customerRepository.save(any(Customer.class))).thenAnswer(inv -> {
+            Customer c = inv.getArgument(0);
+            c.setId(101L);
+            return c;
+        });
+
+        when(contractPassengerRepository.existsByContractIdAndCustomerId(10L, 101L)).thenReturn(false);
+        when(contractPassengerRepository.existsByContractTripIdAndCustomerId(1L, 101L)).thenReturn(true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                contractService.addPassenger(10L, dto)
+        );
+
+        assertTrue(ex.getMessage().toLowerCase().contains("outro contrato"));
+        verify(contractPassengerRepository, never()).save(any(ContractPassenger.class));
+        verify(tripPassengerRepository, never()).save(any());
+    }
+
+    @Test
+    void removePassenger_shouldRemoveTripPassenger_whenCustomerNoLongerInAnyContractOfTrip() {
+        Trip trip = new Trip();
+        trip.setId(1L);
+
+        Contract contract = new Contract();
+        contract.setId(10L);
+        contract.setTrip(trip);
+
+        Customer customer = new Customer();
+        customer.setId(101L);
+
+        ContractPassenger cp = new ContractPassenger();
+        cp.setId(900L);
+        cp.setContract(contract);
+        cp.setCustomer(customer);
+
+        when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+        when(contractPassengerRepository.findByContractIdAndCustomerId(10L, 101L)).thenReturn(Optional.of(cp));
+
+        when(contractPassengerRepository.countByContractTripIdAndCustomerId(1L, 101L)).thenReturn(0L);
+
+        when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+        when(contractPassengerRepository.findByContractId(10L)).thenReturn(List.of());
+
+        ContractResponseDto response = contractService.removePassenger(10L, 101L);
+
+        assertEquals(10L, response.id());
+        verify(contractPassengerRepository).delete(cp);
+        verify(tripPassengerRepository).deleteByTripIdAndCustomerId(1L, 101L);
+    }
+
+    @Test
+    void removePassenger_shouldNotRemoveTripPassenger_whenCustomerStillInAnotherContractOfTrip() {
+        Trip trip = new Trip();
+        trip.setId(1L);
+
+        Contract contract = new Contract();
+        contract.setId(10L);
+        contract.setTrip(trip);
+
+        Customer customer = new Customer();
+        customer.setId(101L);
+
+        ContractPassenger cp = new ContractPassenger();
+        cp.setId(900L);
+        cp.setContract(contract);
+        cp.setCustomer(customer);
+
+        when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+        when(contractPassengerRepository.findByContractIdAndCustomerId(10L, 101L)).thenReturn(Optional.of(cp));
+
+        when(contractPassengerRepository.countByContractTripIdAndCustomerId(1L, 101L)).thenReturn(1L);
+
+        when(contractPassengerRepository.findByContractId(10L)).thenReturn(List.of());
+
+        ContractResponseDto response = contractService.removePassenger(10L, 101L);
+
+        assertEquals(10L, response.id());
+        verify(contractPassengerRepository).delete(cp);
+        verify(tripPassengerRepository, never()).deleteByTripIdAndCustomerId(anyLong(), anyLong());
     }
 
 }
