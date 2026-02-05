@@ -55,6 +55,9 @@ public class ContractService {
             addPassengerInternal(savedContract, trip, passengerDto);
         }
 
+        contractPassengerRepository.flush();
+        tripPassengerRepository.flush();
+
         return getContract(savedContract.getId());
     }
 
@@ -65,6 +68,9 @@ public class ContractService {
 
         Trip trip = contract.getTrip();
         addPassengerInternal(contract, trip, dto);
+
+        contractPassengerRepository.flush();
+        tripPassengerRepository.flush();
 
         return getContract(contractId);
     }
@@ -80,10 +86,16 @@ public class ContractService {
         contractPassengerRepository.delete(item);
 
         Long tripId = contract.getTrip().getId();
-        long remainingInTripContracts = contractPassengerRepository.countByContractTripIdAndCustomerId(tripId, customerId);
+        long remainingInTripContracts =
+                contractPassengerRepository.countByContractTripIdAndCustomerId(tripId, customerId);
 
         if (remainingInTripContracts == 0) {
-            tripPassengerRepository.deleteByTripIdAndCustomerId(tripId, customerId);
+            Trip trip = contract.getTrip();
+            Customer customer = customerRepository.findById(customerId)
+                    .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado com ID: " + customerId));
+            trip.getPassengers().remove(customer);
+            tripRepository.save(trip);
+            tripRepository.flush();
         }
 
         return getContract(contractId);
@@ -94,9 +106,10 @@ public class ContractService {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new IllegalArgumentException("Contrato não encontrado com ID: " + contractId));
 
-        List<ContractPassengerResponseDto> passengers = contractPassengerRepository.findByContractId(contractId).stream()
-                .map(this::toPassengerResponse)
-                .toList();
+        List<ContractPassengerResponseDto> passengers =
+                contractPassengerRepository.findByContractId(contractId).stream()
+                        .map(this::toPassengerResponse)
+                        .toList();
 
         return new ContractResponseDto(
                 contract.getId(),
@@ -111,7 +124,13 @@ public class ContractService {
     public List<CustomerResponseDto> listTripPassengers(Long tripId) {
         return tripPassengerRepository.findByTripId(tripId).stream()
                 .map(TripPassenger::getCustomer)
-                .map(c -> new CustomerResponseDto(c.getId(), c.getName(), c.getDocumentNumber(), c.getBirthDate(), c.getPhoneNumber()))
+                .map(c -> new CustomerResponseDto(
+                        c.getId(),
+                        c.getName(),
+                        c.getDocumentNumber(),
+                        c.getBirthDate(),
+                        c.getPhoneNumber()
+                ))
                 .toList();
     }
 
@@ -141,11 +160,10 @@ public class ContractService {
     }
 
     private void ensureTripPassenger(Trip trip, Customer customer) {
-        if (!tripPassengerRepository.existsByTripIdAndCustomerId(trip.getId(), customer.getId())) {
-            TripPassenger link = new TripPassenger();
-            link.setTrip(trip);
-            link.setCustomer(customer);
-            tripPassengerRepository.save(link);
+        if (!trip.getPassengers().contains(customer)) {
+            trip.getPassengers().add(customer);
+            tripRepository.save(trip);
+            tripRepository.flush();
         }
     }
 
@@ -169,7 +187,8 @@ public class ContractService {
             throw new IllegalArgumentException("Passageiros pagantes devem ter pelo menos 5 anos.");
         }
 
-        long payingCount = contractPassengerRepository.countByContractIdAndChargeType(contractId, ChargeType.PAYING);
+        long payingCount =
+                contractPassengerRepository.countByContractIdAndChargeType(contractId, ChargeType.PAYING);
         if (payingCount >= 4) {
             throw new IllegalArgumentException("Um contrato pode ter no máximo 4 passageiros pagantes.");
         }
@@ -183,7 +202,20 @@ public class ContractService {
 
     private ContractPassengerResponseDto toPassengerResponse(ContractPassenger cp) {
         Customer c = cp.getCustomer();
-        CustomerResponseDto customer = new CustomerResponseDto(c.getId(), c.getName(), c.getDocumentNumber(), c.getBirthDate(), c.getPhoneNumber());
-        return new ContractPassengerResponseDto(customer, cp.getChargeType(), cp.getRoomType(), cp.getPriceSnapshot(), cp.getNotes());
+        CustomerResponseDto customer =
+                new CustomerResponseDto(
+                        c.getId(),
+                        c.getName(),
+                        c.getDocumentNumber(),
+                        c.getBirthDate(),
+                        c.getPhoneNumber()
+                );
+        return new ContractPassengerResponseDto(
+                customer,
+                cp.getChargeType(),
+                cp.getRoomType(),
+                cp.getPriceSnapshot(),
+                cp.getNotes()
+        );
     }
 }
