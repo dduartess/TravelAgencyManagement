@@ -1,176 +1,322 @@
-# ✈️ Travel Agency Management --- MVP
+# ✈️ Travel Agency Management
 
-Sistema de gestão para agência de viagens desenvolvido com **Spring
-Boot + JPA (Hibernate) + PostgreSQL**, com **Spring Security + JWT** e
-integração real com **frontend React**.
+Sistema full‑stack para gestão de agência de viagens com foco em **backend profissional**, **modelagem de domínio**, **segurança com JWT** e **integração com frontend React**.
 
-Foco em **modelagem de domínio**, **boas práticas de arquitetura**,
-**segurança** e **integração full-stack**.
+---
 
-------------------------------------------------------------------------
+# 🚀 Tech Stack
 
-## 🎯 Objetivo do sistema
+## Backend
+- Java 17
+- Spring Boot
+- Spring Security
+- JWT Authentication
+- JPA / Hibernate
+- Maven
 
-O sistema permite:
+## Banco de Dados
+- PostgreSQL
+- Docker
 
--   Cadastro de passageiros
--   Criação de viagens
--   Definição de preços por tipo de quarto
--   Associação de passageiros às viagens
--   Edição e remoção de passageiros da viagem
--   Consulta de passageiros por viagem (com estatísticas)
--   Autenticação segura com JWT
--   Arquitetura organizada em **Entity → DTO → Service → Controller →
-    Security**
+## Documentos
+- Apache PDFBox (geração de contratos em PDF)
 
-------------------------------------------------------------------------
+## Frontend (integração)
+- React
+- Axios
 
-## 🧱 Entidades do Domínio
+---
 
-### 👤 Customer (Passageiro)
+# 🧠 Arquitetura
 
-**Tabela:** `tb_customers`
+Arquitetura em camadas:
 
-  ------------------------------------------------------------------------
-  Campo            Tipo        Regra
-  ---------------- ----------- -------------------------------------------
-  id               Long        PK, auto gerado
-
-  name             String      Obrigatório, apenas letras
-
-  documentNumber   String      Obrigatório, apenas números (7--20)
-
-  birthDate        LocalDate   Obrigatório, passado ou presente
-
-  phoneNumber      String      Obrigatório, 11 dígitos
-  ------------------------------------------------------------------------
-
-Relacionamento: `ManyToMany` com Trip.
-
-------------------------------------------------------------------------
-
-### 🧳 Trip (Viagem)
-
-**Tabela:** `tb_trips`
-
-  Campo         Tipo        Regra
-  ------------- ----------- -----------------
-  id            Long        PK, auto gerado
-  destination   String      Obrigatório
-  startDate     LocalDate   Hoje ou futuro
-  endDate       LocalDate   ≥ startDate
-
-------------------------------------------------------------------------
-
-### 🛏️ Preços por tipo de quarto
-
-``` java
-Map<RoomType, BigDecimal> roomPrices;
+```
+controller → service → repository → entity → dto → security
 ```
 
-**Tabela:** `trip_room_prices`
+### Princípios aplicados
 
-| trip_id \| room_type \| price \|
+- Separação de responsabilidades
+- API REST stateless
+- Validação de regras de negócio no service
+- Controller sem acesso direto ao banco
+- DTO para entrada e saída de dados
 
-Enum `RoomType`: CASAL, TRIPLO, QUADRUPLO
+---
 
-------------------------------------------------------------------------
+# 🔐 Segurança
 
-### 👥 Relação Trip ↔ Customer
+Autenticação stateless com JWT.
 
-**Tabela:** `trip_passengers`
+## 🔄 Fluxo
 
-| trip_id \| customer_id \|
+1. Login → `/auth/login`
+2. Backend gera o token
+3. Front envia no header:
 
-Implementado com `Set<Customer>` para evitar duplicidade.
-
-------------------------------------------------------------------------
-
-## 📦 DTOs
-
-### Entrada
-
--   `TripCreateDto`
--   `CustomerDto`
-
-### Saída
-
--   `TripResponseDto`
--   `CustomerResponseDto`
--   `TripPassengerStatsDto`
-
-------------------------------------------------------------------------
-
-## ⚙️ Regras de Negócio
-
--   Datas da viagem validadas
--   Preços obrigatórios por quarto
--   Passageiros não duplicam na viagem
--   Passageiros podem ser editados e removidos da viagem
-
-------------------------------------------------------------------------
-
-## 🔐 Segurança --- Spring Security + JWT
-
-O sistema utiliza autenticação **stateless** com JWT.
-
-Fluxo:
-
-1.  Login com username e senha
-2.  Backend gera token JWT
-3.  Frontend envia token no header Authorization
-4.  Filtro JWT autentica as requisições protegidas
-
-Endpoint de login:
-
-**POST `/auth/login`**
-
-``` json
-{
-  "username": "admin",
-  "password": "123456"
-}
+```
+Authorization: Bearer TOKEN
 ```
 
-Resposta:
+4. Filtro JWT valida as requisições
 
-``` json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
+---
+
+## 👤 Usuário padrão
+
+Criado automaticamente ao iniciar a aplicação:
+
+```
+login: admin
+senha: admin123
 ```
 
-------------------------------------------------------------------------
+---
 
-## 🌐 Endpoints
+# 🧳 Funcionalidades
 
--   POST `/trips`
--   POST `/trips/{tripId}/passengers`
--   GET `/trips/{tripId}/passengers`
--   PUT `/trips/{tripId}/passengers/{customerId}`
--   DELETE `/trips/{tripId}/passengers/{customerId}`
+## ✈️ Gestão de Viagens
 
-Todos protegidos por JWT.
+- Criar viagem
+- Listar viagens
+- Editar viagem
+- Remover viagem
+- Definir preço por tipo de quarto:
+  - CASAL
+  - TRIPLO
+  - QUADRUPLO
+- Estatísticas de passageiros
 
-------------------------------------------------------------------------
+---
 
-## 🗄️ Banco de Dados
+## 👤 Gestão de Passageiros
 
-PostgreSQL via Docker.
+- Cadastro de passageiros
+- Associação à viagem
+- Remoção da viagem
+- Evita duplicidade
 
-Tabelas:
+---
 
--   tb_customers
--   tb_trips
--   trip_passengers
--   trip_room_prices
+## 📄 Gestão de Contratos
 
-------------------------------------------------------------------------
+### Criação de contratos com:
 
-## ✅ Estado Atual do MVP
+- Múltiplos passageiros
+- Tipo de cobrança:
+  - PAYING
+  - FREE
+- Tipo de quarto
+- Observações
 
--   CRUD completo de viagens
--   Gestão completa de passageiros por viagem
--   Persistência relacional correta
--   Autenticação JWT funcional
--   Integração completa com frontend React
+### Funcionalidades:
+
+- Adicionar passageiro ao contrato
+- Remover passageiro do contrato
+- Buscar contrato por ID
+- Listar contratos da viagem
+- Download do contrato em PDF
+
+---
+
+## 🧾 Geração de PDF
+
+Contrato gerado dinamicamente contendo:
+
+- Dados da viagem
+- Dados dos passageiros
+- Valores
+- Template fixo
+
+---
+
+# 🧱 Modelagem de Domínio
+
+## Customer
+
+Tabela: `tb_customers`
+
+- name
+- documentNumber
+- birthDate
+- phoneNumber
+
+---
+
+## Trip
+
+Tabela: `tb_trips`
+
+- destination
+- startDate
+- endDate
+
+Relacionamentos:
+
+- TripPassenger
+- roomPrices
+
+---
+
+## TripPassenger
+
+Entidade intermediária:
+
+- Trip
+- Customer
+
+---
+
+## Contract
+
+Tabela: `tb_contracts`
+
+- Trip
+- Valor total
+- Lista de passageiros
+
+---
+
+## ContractPassenger
+
+- Contract
+- Customer
+- ChargeType
+- RoomType
+- Observações
+
+---
+
+# 📦 DTOs
+
+## Entrada
+
+- TripCreateDto
+- CustomerDto
+- ContractCreateDto
+- ContractCreateWithPassengersDto
+- ContractPassengerCreateDto
+
+## Saída
+
+- TripResponseDto
+- CustomerResponseDto
+- ContractResponseDto
+- ContractPassengerResponseDto
+- TripPassengerStatsDto
+
+---
+
+# 🌐 Endpoints
+
+## Auth
+
+POST `/auth/login`
+
+---
+
+## Trips
+
+- POST `/trips`
+- GET `/trips`
+- PUT `/trips/{id}`
+- DELETE `/trips/{id}`
+
+---
+
+## Passageiros da viagem
+
+- POST `/trips/{tripId}/passengers`
+- GET `/trips/{tripId}/passengers`
+- DELETE `/trips/{tripId}/passengers/{customerId}`
+
+---
+
+## Contratos
+
+- POST `/contracts`
+- POST `/contracts/with-passengers`
+- GET `/contracts/{id}`
+- GET `/contracts/trip/{tripId}`
+- POST `/contracts/{contractId}/passengers`
+- DELETE `/contracts/{contractId}/passengers/{passengerId}`
+- GET `/contracts/{id}/pdf`
+
+---
+
+# 🗄️ Banco de Dados
+
+Subido com Docker:
+
+```bash
+docker compose up -d
+```
+
+### Tabelas
+
+- tb_users
+- tb_customers
+- tb_trips
+- tb_trip_passengers
+- tb_contracts
+- tb_contract_passengers
+- trip_room_prices
+
+---
+
+# ▶️ Como rodar o projeto
+
+## 1️⃣ Subir o banco
+
+```bash
+docker compose up -d
+```
+
+## 2️⃣ Rodar a aplicação
+
+```bash
+./mvnw spring-boot:run
+```
+
+---
+
+# 🧪 Testes
+
+- Testes unitários das regras do ContractService
+
+---
+
+# 🌍 Integração com Frontend
+
+CORS configurado para:
+
+```
+http://localhost:5173
+```
+
+Autenticação via JWT.
+
+---
+
+# 📈 Roadmap
+
+- Pagamentos
+- Parcelamento
+- Relatórios financeiros
+- Upload de comprovantes
+- Multi‑usuário com permissões
+- Deploy em cloud
+
+---
+
+# 👨‍💻 Autor
+
+Daniel Duarte
+
+Projeto desenvolvido para estudo avançado de:
+
+- Backend com Spring Boot
+- Modelagem de domínio
+- Segurança com JWT
+- Integração full‑stack
